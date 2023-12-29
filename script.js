@@ -161,21 +161,35 @@ function generateEnemies ()
   const enemyWidth = 40;
   const enemyHeight = 60;
 
-  // Ensure only one enemy per row
-  if (Math.random() < 0.2 && enemies.length < 1)
+  // Adjust the spawn frequency by reducing the interval (currently set to 800 milliseconds)
+  if (Math.random() < 0.5 && enemies.length < 5)
   {
+    const speedMultiplier = Math.random() < 0.5 ? 1 : -1;
+    const speedVariation = Math.random() * 2 + 1; // Speed variation between 1 and 3
+    const verticalDistance = Math.random() * 200 + 50; // Vertical distance between 50 and 250
     const enemy = {
       x: Math.random() * (canvas.width - enemyWidth),
-      y: -enemyHeight,
+      y: -enemyHeight - verticalDistance,
       width: enemyWidth,
       height: enemyHeight,
-      speed: Math.random() < 0.5 ? 2 : -2, // Random initial direction
+      speed: speedMultiplier * speedVariation,
     };
 
-    enemies.push(enemy);
+    // Check for vertical distance between the new enemy and existing enemies
+    const safeVerticalDistance = enemies.every(existingEnemy => (
+      enemy.y + enemy.height < existingEnemy.y
+          || existingEnemy.y + existingEnemy.height < enemy.y
+    ));
+
+    // If there's sufficient vertical distance, add the new enemy
+    if (safeVerticalDistance)
+    {
+      enemies.push(enemy);
+    }
   }
 }
 
-setInterval(generateEnemies, 1500);
+// Adjust the interval to control the spawn frequency (currently set to 800 milliseconds)
+setInterval(generateEnemies, 1200);
 
 gameLoop();
