@@ -1,6 +1,16 @@
 /* eslint-disable func-style */
 /* eslint-disable no-implicit-globals */
 
+const globals = {
+  gameplay: {
+    minEnemies: 2,
+  },
+  carDefaults: {
+    width: 40,
+    height: 60,
+  },
+};
+
 /**
  * @type {HTMLCanvasElement}
  */
@@ -8,10 +18,8 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const player = {
-  width: 40,
-  height: 60,
-  x: canvas.width / 2 - 20,
-  y: canvas.height - 180,
+  x: canvas.width / 2 - globals.carDefaults.width / 2,
+  y: canvas.height - globals.carDefaults.height * 3,
   color: 'blue',
   speed: 5,
   movingLeft: false,
@@ -49,11 +57,11 @@ document.addEventListener('keyup', e =>
 
 function movePlayer ()
 {
-  if (player.movingLeft) // && player.x > 0)
+  if (player.movingLeft)
   {
     player.x -= player.speed;
   }
-  else if (player.movingRight) // && player.x < canvas.width - player.width)
+  else if (player.movingRight)
   {
     player.x += player.speed;
   }
@@ -70,7 +78,7 @@ function moveEnemies ()
     enemy.x += enemy.speed;
 
     // Reverse direction when hitting the sidewalls.
-    if (enemy.x < 0 || enemy.x + enemy.width > canvas.width)
+    if (enemy.x < 0 || enemy.x + globals.carDefaults.width > canvas.width)
     {
       enemy.speed *= -1;
     }
@@ -87,12 +95,12 @@ function checkCollisions ()
 {
   gameOver = enemies.some(enemy =>
     // Game over if the player hits an enemy.
-    (player.x < enemy.x + enemy.width
-      && player.x + player.width > enemy.x
-      && player.y < enemy.y + enemy.height
-      && player.y + player.height > enemy.y)
+    (player.x < enemy.x + globals.carDefaults.width
+      && player.x + globals.carDefaults.width > enemy.x
+      && player.y < enemy.y + globals.carDefaults.height
+      && player.y + globals.carDefaults.height > enemy.y)
     // Game over if the player hits a sidewall.
-    || (player.x < 0 || player.x + player.width > canvas.width));
+    || (player.x < 0 || player.x + globals.carDefaults.width > canvas.width));
 }
 
 function update ()
@@ -112,13 +120,13 @@ function draw ()
 
   // Draw the player.
   ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  ctx.fillRect(player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
 
   // Draw the enemies.
   enemies.forEach(enemy =>
   {
     ctx.fillStyle = enemy.color;
-    ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    ctx.fillRect(enemy.x, enemy.y, globals.carDefaults.width, globals.carDefaults.height);
   });
 
   // Draw the score.
@@ -146,7 +154,7 @@ function gameLoop ()
 
 function spawnEnemy ()
 {
-  if (enemies.length < 2 || enemies.length < 5 && Math.random() < .5)
+  if (enemies.length < globals.gameplay.minEnemies || Math.random() < .5)
   {
     // Random initial direction.
     const speedMultiplier = Math.random() < .5 ? 1 : -1;
@@ -165,7 +173,7 @@ function spawnEnemy ()
 
     // Check for vertical distance between the new enemy and existing enemies.
     const safeVerticalDistance = enemies.every(existingEnemy =>
-      enemy.y + enemy.height < existingEnemy.y);
+      enemy.y + globals.carDefaults.height < existingEnemy.y);
 
     // If there's sufficient vertical distance, add the new enemy.
     if (safeVerticalDistance)
@@ -176,7 +184,7 @@ function spawnEnemy ()
 }
 
 // Adjust the interval to control the spawn frequency.
-setInterval(spawnEnemy, 800);
+setInterval(spawnEnemy, 1600);
 
 // Start the game loop.
 window.requestAnimationFrame(gameLoop);
