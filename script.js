@@ -1,152 +1,162 @@
 /* eslint-disable func-style */
 /* eslint-disable no-implicit-globals */
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-use-before-define */
 
-let myGamePiece;
-const myObstacles = [];
-let myScore;
+// Get the canvas and context
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-function startGame ()
-{
-  myGamePiece = new component(30, 30, 'red', 10, 120);
-  myGamePiece.gravity = 0.05;
-  myScore = new component('30px', 'Consolas', 'black', 280, 40, 'text');
-  myGameArea.start();
-}
-
-const myGameArea = {
-  canvas: document.getElementById('mainCanvas'),
-  start: function ()
-  {
-    this.context = this.canvas.getContext('2d');
-    this.frameNo = 0;
-    this.interval = setInterval(updateGameArea, 20);
-  },
-  clear: function ()
-  {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-  },
+// Player car
+const player = {
+  x: canvas.width / 2 - 20,
+  y: canvas.height - 60,
+  width: 40,
+  height: 60,
+  color: 'blue',
+  speed: 5,
 };
 
-function component (width, height, color, x, y, type)
+// Enemy cars
+const enemies = [];
+
+// Game variables
+let score = 0;
+let gameOver = false;
+
+// Function to handle arrow key press
+function handleKeyPress (event)
 {
-  this.type = type;
-  this.score = 0;
-  this.width = width;
-  this.height = height;
-  this.speedX = 0;
-  this.speedY = 0;
-  this.x = x;
-  this.y = y;
-  this.gravity = 0;
-  this.gravitySpeed = 0;
-
-  this.update = function ()
+  if (event.key === 'ArrowLeft' && player.x > 0)
   {
-    const ctx = myGameArea.context;
-
-    if (this.type == 'text')
-    {
-      ctx.font = `${this.width} ${this.height}`;
-      ctx.fillStyle = color;
-      ctx.fillText(this.text, this.x, this.y);
-    }
-    else
-    {
-      ctx.fillStyle = color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-  };
-
-  this.newPos = function ()
+    player.x -= player.speed;
+  }
+  else if (event.key === 'ArrowRight' && player.x < canvas.width - player.width)
   {
-    this.gravitySpeed += this.gravity;
-    this.x += this.speedX;
-    this.y += this.speedY + this.gravitySpeed;
-    this.hitBottom();
-  };
-
-  this.hitBottom = function ()
-  {
-    const rockbottom = myGameArea.canvas.height - this.height;
-
-    if (this.y > rockbottom)
-    {
-      this.y = rockbottom;
-      this.gravitySpeed = 0;
-    }
-  };
-
-  this.crashWith = function (otherobj)
-  {
-    const myleft = this.x;
-    const myright = this.x + (this.width);
-    const mytop = this.y;
-    const mybottom = this.y + (this.height);
-    const otherleft = otherobj.x;
-    const otherright = otherobj.x + (otherobj.width);
-    const othertop = otherobj.y;
-    const otherbottom = otherobj.y + (otherobj.height);
-    let crash = true;
-
-    if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright))
-    {
-      crash = false;
-    }
-
-    return crash;
-  };
+    player.x += player.speed;
+  }
 }
 
-function updateGameArea ()
-{
-  let x, height, gap, minHeight, maxHeight, minGap, maxGap;
+// Event listener for arrow key input
+document.addEventListener('keydown', handleKeyPress);
 
-  for (let i = 0; i < myObstacles.length; i += 1)
+// Function to draw the player car
+function drawPlayer ()
+{
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+// Function to draw an enemy car
+function drawEnemy (enemy)
+{
+  ctx.fillStyle = 'red';
+  ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+}
+
+// Function to move the enemy cars
+function moveEnemies ()
+{
+  for (let i = 0; i < enemies.length; i++)
   {
-    if (myGamePiece.crashWith(myObstacles[i]))
-    {
-      return;
-    }
+    enemies[i].y += 2;
+    // Add left-right movement to make it challenging
+    enemies[i].x += Math.sin(enemies[i].y / 50) * 5;
   }
 
-  myGameArea.clear();
-  myGameArea.frameNo += 1;
-
-  if (myGameArea.frameNo == 1 || everyinterval(150))
+  // Remove enemies that have moved off the screen
+  enemies.forEach((enemy, index) =>
   {
-    x = myGameArea.canvas.width;
-    minHeight = 20;
-    maxHeight = 200;
-    height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
-    minGap = 50;
-    maxGap = 200;
-    gap = Math.floor(Math.random() * (maxGap - minGap + 1) + minGap);
-    myObstacles.push(new component(10, height, 'green', x, 0));
-    myObstacles.push(new component(10, x - height - gap, 'green', x, height + gap));
-  }
+    if (enemy.y > canvas.height)
+    {
+      enemies.splice(index, 1);
+      score++;
+    }
+  });
+}
 
-  for (let i = 0; i < myObstacles.length; i += 1)
+// Function to check for collisions
+function checkCollisions ()
+{
+  enemies.forEach(enemy =>
   {
-    myObstacles[i].x += -1;
-    myObstacles[i].update();
+    if (
+      player.x < enemy.x + enemy.width
+            && player.x + player.width > enemy.x
+            && player.y < enemy.y + enemy.height
+            && player.y + player.height > enemy.y
+    )
+    {
+      gameOver = true;
+    }
+
+    // Check for collision with roadside barrier
+    if (player.x < 0 || player.x + player.width > canvas.width)
+    {
+      gameOver = true;
+    }
+  });
+}
+
+// Function to update the game state
+function update ()
+{
+  if (!gameOver)
+  {
+    moveEnemies();
+    checkCollisions();
   }
-
-  myScore.text = `SCORE: ${myGameArea.frameNo}`;
-  myScore.update();
-  myGamePiece.newPos();
-  myGamePiece.update();
 }
 
-function everyinterval (n)
+// Function to draw the game
+function draw ()
 {
-  if ((myGameArea.frameNo / n) % 1 == 0) { return true; }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  return false;
+  drawPlayer();
+
+  enemies.forEach(drawEnemy);
+
+  // Display score
+  ctx.fillStyle = 'black';
+  ctx.font = '20px Arial';
+  ctx.fillText(`Score: ${score}`, 10, 30);
+
+  // Display game over message
+  if (gameOver)
+  {
+    ctx.fillText('Game Over', canvas.width / 2 - 60, canvas.height / 2);
+  }
 }
 
-function accelerate (n)
+// Function to run the game loop
+function gameLoop ()
 {
-  myGamePiece.gravity = n;
+  update();
+  draw();
+
+  if (!gameOver)
+  {
+    requestAnimationFrame(gameLoop);
+  }
 }
+
+// Function to generate random enemy cars
+function generateEnemies ()
+{
+  const enemyWidth = 40;
+  const enemyHeight = 60;
+
+  const enemy = {
+    x: Math.random() * (canvas.width - enemyWidth),
+    y: -enemyHeight,
+    width: enemyWidth,
+    height: enemyHeight,
+  };
+
+  enemies.push(enemy);
+}
+
+// Generate an enemy every 1.5 seconds
+setInterval(generateEnemies, 1500);
+
+// Start the game loop
+gameLoop();

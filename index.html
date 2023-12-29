@@ -7,6 +7,8 @@
 
   <style>
     canvas {
+      display: block;
+      margin: 20px auto;
       border: 1px solid #d3d3d3;
       background-color: #f1f1f1;
     }
@@ -15,10 +17,8 @@
   <script src="script.js" defer></script>
 </head>
 
-<body onload="startGame()">
-  <canvas id="mainCanvas" width="480" height="320"></canvas>
-  <br>
-  <button onmousedown="accelerate(-0.2)" onmouseup="accelerate(0.05)">ACCELERATE</button>
+<body>
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
 </body>
 
 </html>
