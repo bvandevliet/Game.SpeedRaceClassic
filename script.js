@@ -93,14 +93,15 @@ function moveEnemies ()
 
 function checkCollisions ()
 {
-  gameOver = enemies.some(enemy =>
+  gameOver =
+    // Game over if the player hits a sidewall.
+    player.x < 0 || player.x + globals.carDefaults.width > canvas.width
     // Game over if the player hits an enemy.
-    (player.x < enemy.x + globals.carDefaults.width
+    || enemies.some(enemy =>
+      player.x < enemy.x + globals.carDefaults.width
       && player.x + globals.carDefaults.width > enemy.x
       && player.y < enemy.y + globals.carDefaults.height
-      && player.y + globals.carDefaults.height > enemy.y)
-    // Game over if the player hits a sidewall.
-    || (player.x < 0 || player.x + globals.carDefaults.width > canvas.width));
+      && player.y + globals.carDefaults.height > enemy.y);
 }
 
 function update ()
