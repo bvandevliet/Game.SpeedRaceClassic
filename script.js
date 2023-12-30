@@ -3,13 +3,22 @@
 
 const globals = {
   gameplay: {
+    spawnHeight: 240,
+    spawnMargin: 20,
+    spawnChance: .67,
     minEnemies: 2,
+    drivingSteps: 2,
   },
   carDefaults: {
     width: 40,
     height: 60,
   },
 };
+
+let spawnHeightRemaining = -globals.gameplay.spawnMargin;
+
+let score = 0;
+let gameOver = false;
 
 /**
  * @type {HTMLCanvasElement}
@@ -27,9 +36,6 @@ const player = {
 };
 
 const enemies = [];
-
-let score = 0;
-let gameOver = false;
 
 document.addEventListener('keydown', e =>
 {
@@ -69,10 +75,12 @@ function movePlayer ()
 
 function moveEnemies ()
 {
+  spawnHeightRemaining -= globals.gameplay.drivingSteps;
+
   enemies.forEach((enemy, index) =>
   {
     // Move the enemy down.
-    enemy.y += 2;
+    enemy.y += globals.gameplay.drivingSteps;
 
     // Move the enemy sideways.
     enemy.x += enemy.speed;
@@ -87,6 +95,13 @@ function moveEnemies ()
     {
       enemies.splice(index, 1);
       score++;
+
+      console.log(enemies.length);
+
+      // Increase difficulty.
+      globals.gameplay.spawnHeight *= 0.98;
+      globals.gameplay.spawnChance *= 1.01;
+      globals.gameplay.drivingSteps *= 1.01;
     }
   });
 }
@@ -111,6 +126,7 @@ function update ()
     movePlayer();
     moveEnemies();
     checkCollisions();
+    spawnEnemy();
   }
 }
 
@@ -155,37 +171,29 @@ function gameLoop ()
 
 function spawnEnemy ()
 {
-  if (enemies.length < globals.gameplay.minEnemies || Math.random() < .5)
+  if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
   {
-    // Random initial direction.
-    const speedMultiplier = Math.random() < .5 ? 1 : -1;
+    spawnHeightRemaining = globals.gameplay.spawnHeight;
 
-    // Speed variation between 1 and 3.
-    const speedVariation = Math.random() * 2 + 1;
-
-    const enemy = {
-      width: 40,
-      height: 60,
-      x: Math.random() * (canvas.width - 40),
-      y: -60,
-      color: 'red',
-      speed: speedMultiplier * speedVariation,
-    };
-
-    // Check for vertical distance between the new enemy and existing enemies.
-    const safeVerticalDistance = enemies.every(existingEnemy =>
-      enemy.y + globals.carDefaults.height < existingEnemy.y);
-
-    // If there's sufficient vertical distance, add the new enemy.
-    if (safeVerticalDistance)
+    if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
     {
+      // Random initial direction.
+      const speedMultiplier = Math.random() < .5 ? 1 : -1;
+
+      // Speed variation.
+      const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
+
+      const enemy = {
+        x: Math.random() * (canvas.width - 40),
+        y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
+        color: 'red',
+        speed: speedMultiplier * speedVariation,
+      };
+
       enemies.push(enemy);
     }
   }
 }
-
-// Adjust the interval to control the spawn frequency.
-setInterval(spawnEnemy, 1600);
 
 // Start the game loop.
 window.requestAnimationFrame(gameLoop);
