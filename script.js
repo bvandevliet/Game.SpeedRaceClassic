@@ -1,152 +1,204 @@
 /* eslint-disable func-style */
 /* eslint-disable no-implicit-globals */
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-use-before-define */
 
-let myGamePiece;
-const myObstacles = [];
-let myScore;
-
-function startGame ()
-{
-  myGamePiece = new component(30, 30, 'red', 10, 120);
-  myGamePiece.gravity = 0.05;
-  myScore = new component('30px', 'Consolas', 'black', 280, 40, 'text');
-  myGameArea.start();
-}
-
-const myGameArea = {
-  canvas: document.getElementById('mainCanvas'),
-  start: function ()
-  {
-    this.context = this.canvas.getContext('2d');
-    this.frameNo = 0;
-    this.interval = setInterval(updateGameArea, 20);
+const globals = {
+  gameplay: {
+    spawnHeight: 240,
+    spawnEntropy: 80,
+    spawnMargin: 40,
+    spawnChance: .75,
+    minEnemies: 2,
+    drivingSteps: 2,
   },
-  clear: function ()
-  {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  carDefaults: {
+    width: 40,
+    height: 60,
   },
 };
 
-function component (width, height, color, x, y, type)
+let spawnHeightRemaining = -globals.gameplay.spawnMargin;
+
+let score = 0;
+let gameOver = false;
+
+/**
+ * @type {HTMLCanvasElement}
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const player = {
+  x: canvas.width / 2 - globals.carDefaults.width / 2,
+  y: canvas.height - globals.carDefaults.height * 3,
+  color: 'blue',
+  speed: 5,
+  movingLeft: false,
+  movingRight: false,
+};
+
+const enemies = [];
+
+document.addEventListener('keydown', e =>
 {
-  this.type = type;
-  this.score = 0;
-  this.width = width;
-  this.height = height;
-  this.speedX = 0;
-  this.speedY = 0;
-  this.x = x;
-  this.y = y;
-  this.gravity = 0;
-  this.gravitySpeed = 0;
-
-  this.update = function ()
+  if (e.key === 'ArrowLeft')
   {
-    const ctx = myGameArea.context;
-
-    if (this.type == 'text')
-    {
-      ctx.font = `${this.width} ${this.height}`;
-      ctx.fillStyle = color;
-      ctx.fillText(this.text, this.x, this.y);
-    }
-    else
-    {
-      ctx.fillStyle = color;
-      ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-  };
-
-  this.newPos = function ()
+    player.movingLeft = true;
+  }
+  else if (e.key === 'ArrowRight')
   {
-    this.gravitySpeed += this.gravity;
-    this.x += this.speedX;
-    this.y += this.speedY + this.gravitySpeed;
-    this.hitBottom();
-  };
+    player.movingRight = true;
+  }
+});
 
-  this.hitBottom = function ()
+document.addEventListener('keyup', e =>
+{
+  if (e.key === 'ArrowLeft')
   {
-    const rockbottom = myGameArea.canvas.height - this.height;
-
-    if (this.y > rockbottom)
-    {
-      this.y = rockbottom;
-      this.gravitySpeed = 0;
-    }
-  };
-
-  this.crashWith = function (otherobj)
+    player.movingLeft = false;
+  }
+  else if (e.key === 'ArrowRight')
   {
-    const myleft = this.x;
-    const myright = this.x + (this.width);
-    const mytop = this.y;
-    const mybottom = this.y + (this.height);
-    const otherleft = otherobj.x;
-    const otherright = otherobj.x + (otherobj.width);
-    const othertop = otherobj.y;
-    const otherbottom = otherobj.y + (otherobj.height);
-    let crash = true;
+    player.movingRight = false;
+  }
+});
 
-    if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright))
-    {
-      crash = false;
-    }
-
-    return crash;
-  };
+function movePlayer ()
+{
+  if (player.movingLeft)
+  {
+    player.x -= player.speed;
+  }
+  else if (player.movingRight)
+  {
+    player.x += player.speed;
+  }
 }
 
-function updateGameArea ()
+function moveEnemies ()
 {
-  let x, height, gap, minHeight, maxHeight, minGap, maxGap;
+  spawnHeightRemaining -= globals.gameplay.drivingSteps;
 
-  for (let i = 0; i < myObstacles.length; i += 1)
+  enemies.forEach((enemy, index) =>
   {
-    if (myGamePiece.crashWith(myObstacles[i]))
+    // Move the enemy down.
+    enemy.y += globals.gameplay.drivingSteps;
+
+    // Move the enemy sideways.
+    enemy.x += enemy.speed;
+
+    // Reverse direction when hitting the sidewalls.
+    if (enemy.x < 0 || enemy.x + globals.carDefaults.width > canvas.width)
     {
-      return;
+      enemy.speed *= -1;
+    }
+
+    if (enemy.y > canvas.height)
+    {
+      enemies.splice(index, 1);
+    }
+
+    if (!enemy.dodged && enemy.y > player.y + globals.carDefaults.height)
+    {
+      enemy.dodged = true;
+      score++;
+
+      // Increase difficulty.
+      globals.gameplay.spawnHeight = Math.max(.99 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
+      globals.gameplay.drivingSteps *= 1.01;
+    }
+  });
+}
+
+function checkCollisions ()
+{
+  gameOver =
+    // Game over if the player hits a sidewall.
+    player.x < 0 || player.x + globals.carDefaults.width > canvas.width
+    // Game over if the player hits an enemy.
+    || enemies.some(enemy =>
+      player.x < enemy.x + globals.carDefaults.width
+      && player.x + globals.carDefaults.width > enemy.x
+      && player.y < enemy.y + globals.carDefaults.height
+      && player.y + globals.carDefaults.height > enemy.y);
+}
+
+function spawnEnemy ()
+{
+  if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
+  {
+    spawnHeightRemaining = globals.gameplay.spawnHeight;
+
+    if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
+    {
+      // Random initial direction.
+      const speedMultiplier = Math.random() < .5 ? 1 : -1;
+
+      // Speed variation.
+      const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
+
+      const enemy = {
+        x: Math.random() * (canvas.width - 40),
+        y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
+        color: 'red',
+        speed: speedMultiplier * speedVariation,
+      };
+
+      enemies.push(enemy);
     }
   }
-
-  myGameArea.clear();
-  myGameArea.frameNo += 1;
-
-  if (myGameArea.frameNo == 1 || everyinterval(150))
-  {
-    x = myGameArea.canvas.width;
-    minHeight = 20;
-    maxHeight = 200;
-    height = Math.floor(Math.random() * (maxHeight - minHeight + 1) + minHeight);
-    minGap = 50;
-    maxGap = 200;
-    gap = Math.floor(Math.random() * (maxGap - minGap + 1) + minGap);
-    myObstacles.push(new component(10, height, 'green', x, 0));
-    myObstacles.push(new component(10, x - height - gap, 'green', x, height + gap));
-  }
-
-  for (let i = 0; i < myObstacles.length; i += 1)
-  {
-    myObstacles[i].x += -1;
-    myObstacles[i].update();
-  }
-
-  myScore.text = `SCORE: ${myGameArea.frameNo}`;
-  myScore.update();
-  myGamePiece.newPos();
-  myGamePiece.update();
 }
 
-function everyinterval (n)
+function update ()
 {
-  if ((myGameArea.frameNo / n) % 1 == 0) { return true; }
+  if (!gameOver)
+  {
+    movePlayer();
+    moveEnemies();
+    checkCollisions();
+    spawnEnemy();
 
-  return false;
+    // console.log(globals.gameplay);
+  }
 }
 
-function accelerate (n)
+function draw ()
 {
-  myGamePiece.gravity = n;
+  // Clear the canvas.
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw the player.
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
+
+  // Draw the enemies.
+  enemies.forEach(enemy =>
+  {
+    ctx.fillStyle = enemy.color;
+    ctx.fillRect(enemy.x, enemy.y, globals.carDefaults.width, globals.carDefaults.height);
+  });
+
+  // Draw the score.
+  ctx.fillStyle = 'black';
+  ctx.font = '20px Arial';
+  ctx.fillText(`Score: ${score}`, 10, 30);
+
+  // Draw the game over message.
+  if (gameOver)
+  {
+    ctx.fillText('Game Over', canvas.width / 2 - 60, canvas.height / 2);
+  }
 }
+
+function gameLoop ()
+{
+  update();
+  draw();
+
+  if (!gameOver)
+  {
+    window.requestAnimationFrame(gameLoop);
+  }
+}
+
+// Start the game loop.
+window.requestAnimationFrame(gameLoop);
