@@ -4,8 +4,9 @@
 const globals = {
   gameplay: {
     spawnHeight: 240,
-    spawnMargin: 20,
-    spawnChance: .67,
+    spawnEntropy: 80,
+    spawnMargin: 40,
+    spawnChance: .75,
     minEnemies: 2,
     drivingSteps: 2,
   },
@@ -96,11 +97,8 @@ function moveEnemies ()
       enemies.splice(index, 1);
       score++;
 
-      console.log(enemies.length);
-
       // Increase difficulty.
-      globals.gameplay.spawnHeight *= 0.98;
-      globals.gameplay.spawnChance *= 1.01;
+      globals.gameplay.spawnHeight = Math.max(.99 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
       globals.gameplay.drivingSteps *= 1.01;
     }
   });
@@ -153,6 +151,8 @@ function update ()
     moveEnemies();
     checkCollisions();
     spawnEnemy();
+
+    // console.log(globals.gameplay);
   }
 }
 
