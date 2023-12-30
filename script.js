@@ -95,6 +95,11 @@ function moveEnemies ()
     if (enemy.y > canvas.height)
     {
       enemies.splice(index, 1);
+    }
+
+    if (!enemy.dodged && enemy.y > player.y + globals.carDefaults.height)
+    {
+      enemy.dodged = true;
       score++;
 
       // Increase difficulty.
