@@ -119,6 +119,32 @@ function checkCollisions ()
       && player.y + globals.carDefaults.height > enemy.y);
 }
 
+function spawnEnemy ()
+{
+  if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
+  {
+    spawnHeightRemaining = globals.gameplay.spawnHeight;
+
+    if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
+    {
+      // Random initial direction.
+      const speedMultiplier = Math.random() < .5 ? 1 : -1;
+
+      // Speed variation.
+      const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
+
+      const enemy = {
+        x: Math.random() * (canvas.width - 40),
+        y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
+        color: 'red',
+        speed: speedMultiplier * speedVariation,
+      };
+
+      enemies.push(enemy);
+    }
+  }
+}
+
 function update ()
 {
   if (!gameOver)
@@ -166,32 +192,6 @@ function gameLoop ()
   if (!gameOver)
   {
     window.requestAnimationFrame(gameLoop);
-  }
-}
-
-function spawnEnemy ()
-{
-  if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
-  {
-    spawnHeightRemaining = globals.gameplay.spawnHeight;
-
-    if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
-    {
-      // Random initial direction.
-      const speedMultiplier = Math.random() < .5 ? 1 : -1;
-
-      // Speed variation.
-      const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
-
-      const enemy = {
-        x: Math.random() * (canvas.width - 40),
-        y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
-        color: 'red',
-        speed: speedMultiplier * speedVariation,
-      };
-
-      enemies.push(enemy);
-    }
   }
 }
 
