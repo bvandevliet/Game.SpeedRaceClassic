@@ -16,19 +16,11 @@ const globals = {
   },
 };
 
-let spawnHeightRemaining = -globals.gameplay.spawnMargin;
-
-let score = 0;
-let gameOver = false;
-
 /**
  * @type {HTMLCanvasElement}
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-
-const carPlayer = document.getElementById('car-player');
-const carEnemy = document.getElementById('car-enemy');
 
 const player = {
   x: canvas.width / 2 - globals.carDefaults.width / 2,
@@ -38,6 +30,16 @@ const player = {
   movingLeft: false,
   movingRight: false,
 };
+
+let highwayOffset = 0;
+let spawnHeightRemaining = -globals.gameplay.spawnMargin;
+
+let score = 0;
+let gameOver = false;
+
+const highwayImg = document.getElementById('highway-img');
+const carPlayer = document.getElementById('car-player-img');
+const carEnemy = document.getElementById('car-enemy-img');
 
 const enemies = [];
 
@@ -77,9 +79,12 @@ function movePlayer ()
   }
 }
 
-function moveEnemies ()
+function moveGameplay ()
 {
   spawnHeightRemaining -= globals.gameplay.drivingSteps;
+
+  highwayOffset %= 500;
+  highwayOffset += globals.gameplay.drivingSteps * 1.5;
 
   enemies.forEach((enemy, index) =>
   {
@@ -140,7 +145,7 @@ function spawnEnemy ()
       const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
 
       const enemy = {
-        x: Math.random() * (canvas.width - 40),
+        x: Math.random() * (canvas.width - globals.carDefaults.width),
         y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
         color: 'red',
         speed: speedMultiplier * speedVariation,
@@ -156,7 +161,7 @@ function update ()
   if (!gameOver)
   {
     movePlayer();
-    moveEnemies();
+    moveGameplay();
     checkCollisions();
     spawnEnemy();
 
@@ -168,6 +173,11 @@ function draw ()
 {
   // Clear the canvas.
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw the highway.
+  ctx.drawImage(highwayImg, 0, highwayOffset - 500);
+  ctx.drawImage(highwayImg, 0, highwayOffset);
+  ctx.drawImage(highwayImg, 0, highwayOffset + 500);
 
   // Draw the player.
   ctx.drawImage(carPlayer, player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
