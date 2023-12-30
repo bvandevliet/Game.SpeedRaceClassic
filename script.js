@@ -2,17 +2,21 @@
 /* eslint-disable no-implicit-globals */
 
 const globals = {
+  assets: {
+    highwayDriveWidth: 640,
+    highwayImgHeight: 1600,
+  },
   gameplay: {
     spawnHeight: 240,
-    spawnEntropy: 80,
-    spawnMargin: 40,
+    spawnEntropy: 70,
+    spawnMargin: 100,
     spawnChance: .75,
     minEnemies: 2,
-    drivingSteps: 2,
+    drivingSteps: 3,
   },
   carDefaults: {
-    width: 45,
-    height: 80,
+    width: 50,
+    height: 90,
   },
 };
 
@@ -30,6 +34,9 @@ const player = {
   movingLeft: false,
   movingRight: false,
 };
+
+const leftBound = (canvas.width - globals.assets.highwayDriveWidth) / 2;
+const rightBound = (canvas.width + globals.assets.highwayDriveWidth) / 2;
 
 let highwayOffset = 0;
 let spawnHeightRemaining = -globals.gameplay.spawnMargin;
@@ -83,7 +90,7 @@ function moveGameplay ()
 {
   spawnHeightRemaining -= globals.gameplay.drivingSteps;
 
-  highwayOffset %= 500;
+  highwayOffset %= globals.assets.highwayImgHeight;
   highwayOffset += globals.gameplay.drivingSteps * 1.5;
 
   enemies.forEach((enemy, index) =>
@@ -95,7 +102,7 @@ function moveGameplay ()
     enemy.x += enemy.speed;
 
     // Reverse direction when hitting the sidewalls.
-    if (enemy.x < 0 || enemy.x + globals.carDefaults.width > canvas.width)
+    if (enemy.x < leftBound || enemy.x + globals.carDefaults.width > rightBound)
     {
       enemy.speed *= -1;
     }
@@ -121,7 +128,7 @@ function checkCollisions ()
 {
   gameOver =
     // Game over if the player hits a sidewall.
-    player.x < -5 || player.x + globals.carDefaults.width > canvas.width + 5
+    player.x < leftBound - 20 || player.x + globals.carDefaults.width > rightBound + 20
     // Game over if the player hits an enemy.
     || enemies.some(enemy =>
       player.x < enemy.x + globals.carDefaults.width - 5
@@ -145,7 +152,7 @@ function spawnEnemy ()
       const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
 
       const enemy = {
-        x: Math.random() * (canvas.width - globals.carDefaults.width),
+        x: leftBound + Math.random() * (globals.assets.highwayDriveWidth - globals.carDefaults.width),
         y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
         color: 'red',
         speed: speedMultiplier * speedVariation,
@@ -175,9 +182,9 @@ function draw ()
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw the highway.
-  ctx.drawImage(highwayImg, 0, highwayOffset - 500);
+  ctx.drawImage(highwayImg, 0, highwayOffset - globals.assets.highwayImgHeight);
   ctx.drawImage(highwayImg, 0, highwayOffset);
-  ctx.drawImage(highwayImg, 0, highwayOffset + 500);
+  ctx.drawImage(highwayImg, 0, highwayOffset + globals.assets.highwayImgHeight);
 
   // Draw the player.
   ctx.drawImage(carPlayer, player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);

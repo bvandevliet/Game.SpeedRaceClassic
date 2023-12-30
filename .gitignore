@@ -1,3 +1,6 @@
+# Large work assets
+*.psd
+
 # Logs
 logs
 *.log
