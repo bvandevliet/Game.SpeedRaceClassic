@@ -11,8 +11,8 @@ const globals = {
     drivingSteps: 2,
   },
   carDefaults: {
-    width: 40,
-    height: 60,
+    width: 45,
+    height: 80,
   },
 };
 
@@ -26,6 +26,9 @@ let gameOver = false;
  */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+const carPlayer = document.getElementById('car-player');
+const carEnemy = document.getElementById('car-enemy');
 
 const player = {
   x: canvas.width / 2 - globals.carDefaults.width / 2,
@@ -113,13 +116,13 @@ function checkCollisions ()
 {
   gameOver =
     // Game over if the player hits a sidewall.
-    player.x < 0 || player.x + globals.carDefaults.width > canvas.width
+    player.x < -5 || player.x + globals.carDefaults.width > canvas.width + 5
     // Game over if the player hits an enemy.
     || enemies.some(enemy =>
-      player.x < enemy.x + globals.carDefaults.width
-      && player.x + globals.carDefaults.width > enemy.x
-      && player.y < enemy.y + globals.carDefaults.height
-      && player.y + globals.carDefaults.height > enemy.y);
+      player.x < enemy.x + globals.carDefaults.width - 5
+      && player.x + globals.carDefaults.width > enemy.x + 5
+      && player.y < enemy.y + globals.carDefaults.height - 2
+      && player.y + globals.carDefaults.height > enemy.y + 2);
 }
 
 function spawnEnemy ()
@@ -167,14 +170,12 @@ function draw ()
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw the player.
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
+  ctx.drawImage(carPlayer, player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
 
   // Draw the enemies.
   enemies.forEach(enemy =>
   {
-    ctx.fillStyle = enemy.color;
-    ctx.fillRect(enemy.x, enemy.y, globals.carDefaults.width, globals.carDefaults.height);
+    ctx.drawImage(carEnemy, enemy.x, enemy.y, globals.carDefaults.width, globals.carDefaults.height);
   });
 
   // Draw the score.
