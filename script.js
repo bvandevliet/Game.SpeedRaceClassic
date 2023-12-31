@@ -182,9 +182,8 @@ function draw ()
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw the highway.
-  ctx.drawImage(highwayImg, 0, highwayOffset - globals.assets.highwayImgHeight);
+  ctx.drawImage(highwayImg, 0, highwayOffset - globals.assets.highwayImgHeight + 1);
   ctx.drawImage(highwayImg, 0, highwayOffset);
-  ctx.drawImage(highwayImg, 0, highwayOffset + globals.assets.highwayImgHeight);
 
   // Draw the player.
   ctx.drawImage(carPlayer, player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
