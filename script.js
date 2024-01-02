@@ -3,12 +3,13 @@
 
 const globals = {
   assets: {
-    highwayDriveWidth: 640,
-    highwayImgHeight: 1600,
+    highwayDriveWidth: 860,
+    highwayImgWidth: 1600,
+    highwayImgHeight: 2400,
   },
   gameplay: {
     spawnHeight: 240,
-    spawnEntropy: 60,
+    spawnEntropy: 70,
     spawnMargin: 100,
     spawnChance: .75,
     minEnemies: 2,
@@ -35,14 +36,15 @@ const player = {
   movingRight: false,
 };
 
-const leftBound = (canvas.width - globals.assets.highwayDriveWidth) / 2;
-const rightBound = (canvas.width + globals.assets.highwayDriveWidth) / 2;
-
+let { highwayImgWidth, highwayDriveWidth } = globals.assets;
 let highwayOffset = 0;
 let spawnHeightRemaining = -globals.gameplay.spawnMargin;
 
 let score = 0;
 let gameOver = false;
+
+let leftBound = (canvas.width - highwayDriveWidth) / 2;
+let rightBound = (canvas.width + highwayDriveWidth) / 2;
 
 const highwayImg = document.getElementById('highway-img');
 const carPlayer = document.getElementById('car-player-img');
@@ -95,31 +97,44 @@ function moveGameplay ()
 
   enemies.forEach((enemy, index) =>
   {
-    // Move the enemy down.
-    enemy.y += globals.gameplay.drivingSteps;
-
-    // Move the enemy sideways.
-    enemy.x += enemy.speed;
-
-    // Reverse direction when hitting the sidewalls.
-    if (enemy.x < leftBound || enemy.x + globals.carDefaults.width > rightBound)
-    {
-      enemy.speed *= -1;
-    }
-
-    if (enemy.y > canvas.height)
-    {
-      enemies.splice(index, 1);
-    }
-
+    // Set score and increase difficulty.
     if (!enemy.dodged && enemy.y > player.y + globals.carDefaults.height)
     {
       enemy.dodged = true;
       score++;
 
-      // Increase difficulty.
       globals.gameplay.spawnHeight = Math.max(.99 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
       globals.gameplay.drivingSteps *= 1.01;
+
+      highwayImgWidth = Math.max(.995 * highwayImgWidth, canvas.width);
+      highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
+
+      leftBound = (canvas.width - highwayDriveWidth) / 2;
+      rightBound = (canvas.width + highwayDriveWidth) / 2;
+    }
+
+    // Move the enemy down.
+    enemy.y += globals.gameplay.drivingSteps;
+
+    // Remove the enemy when it goes offscreen.
+    if (enemy.y > canvas.height)
+    {
+      enemies.splice(index, 1);
+
+      return;
+    }
+
+    // Move the enemy sideways.
+    enemy.x += enemy.speed;
+
+    // Reverse direction when hitting the sidewalls.
+    if (enemy.x < leftBound)
+    {
+      enemy.speed = Math.abs(enemy.speed);
+    }
+    else if (enemy.x + globals.carDefaults.width > rightBound)
+    {
+      enemy.speed = -Math.abs(enemy.speed);
     }
   });
 }
@@ -179,8 +194,8 @@ function draw ()
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Draw the highway.
-  ctx.drawImage(highwayImg, 0, highwayOffset - globals.assets.highwayImgHeight + 1);
-  ctx.drawImage(highwayImg, 0, highwayOffset);
+  ctx.drawImage(highwayImg, (canvas.width - highwayImgWidth) / 2, highwayOffset - globals.assets.highwayImgHeight + 1, highwayImgWidth, globals.assets.highwayImgHeight);
+  ctx.drawImage(highwayImg, (canvas.width - highwayImgWidth) / 2, highwayOffset, highwayImgWidth, globals.assets.highwayImgHeight);
 
   // Draw the player.
   ctx.drawImage(carPlayer, player.x, player.y, globals.carDefaults.width, globals.carDefaults.height);
