@@ -3,17 +3,17 @@
 
 const globals = {
   assets: {
-    highwayDriveWidth: 860,
-    highwayImgWidth: 1600,
-    highwayImgHeight: 2400,
+    highwayDriveWidth: 750,
+    highwayImgWidth: 1400,
+    highwayImgHeight: 1800,
   },
   gameplay: {
     spawnHeight: 240,
-    spawnEntropy: 70,
-    spawnMargin: 100,
-    spawnChance: .75,
+    spawnEntropy: 80,
+    spawnMargin: 30,
+    spawnChance: .5,
     minEnemies: 2,
-    drivingSteps: 5,
+    drivingSteps: 6,
   },
   carDefaults: {
     width: 50,
@@ -106,7 +106,7 @@ function moveGameplay ()
       globals.gameplay.spawnHeight = Math.max(.99 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
       globals.gameplay.drivingSteps *= 1.01;
 
-      highwayImgWidth = Math.max(.995 * highwayImgWidth, canvas.width);
+      highwayImgWidth = Math.max(.99 * highwayImgWidth, canvas.width);
       highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
 
       leftBound = (canvas.width - highwayDriveWidth) / 2;
@@ -119,6 +119,8 @@ function moveGameplay ()
     // Remove the enemy when it goes offscreen.
     if (enemy.y > canvas.height)
     {
+      enemy.dodged || score++;
+
       enemies.splice(index, 1);
 
       return;
@@ -161,10 +163,10 @@ function spawnEnemy ()
     if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
     {
       // Speed variation.
-      const speedVariation = globals.gameplay.drivingSteps * 2 / 3 + Math.random() * globals.gameplay.drivingSteps * 2 / 3;
+      const speedVariation = globals.gameplay.drivingSteps * 1 / 3 + Math.random() * globals.gameplay.drivingSteps * 1 / 2;
 
       const enemy = {
-        x: leftBound + Math.random() * (globals.assets.highwayDriveWidth - globals.carDefaults.width),
+        x: leftBound + Math.random() * (highwayDriveWidth - globals.carDefaults.width),
         y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
         color: 'red',
         speed: speedVariation * (Math.random() < .5 ? 1 : -1),
