@@ -10,7 +10,7 @@ const globals = {
   gameplay: {
     spawnHeight: 240,
     spawnEntropy: 80,
-    spawnMargin: 30,
+    spawnMargin: 50,
     spawnChance: .5,
     minEnemies: 2,
     drivingSteps: 6,
@@ -119,8 +119,8 @@ function moveGameplay ()
       enemy.dodged = true;
       score++;
 
-      globals.gameplay.spawnHeight = Math.max(.99 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
-      globals.gameplay.drivingSteps *= 1.01;
+      globals.gameplay.spawnHeight = Math.max(.992 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
+      globals.gameplay.drivingSteps *= 1.005;
 
       highwayImgWidth = Math.max(.99 * highwayImgWidth, canvas.width);
       highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
@@ -202,7 +202,11 @@ function update ()
     checkCollisions();
     spawnEnemy();
 
-    // console.log(globals.gameplay);
+    console.debug(
+      `drivingSteps: ${globals.gameplay.drivingSteps}\n`
+      + `drivingWidth: ${highwayDriveWidth}\n`
+      + `spawnHeight:  ${globals.gameplay.spawnHeight}`,
+    );
   }
 }
 
