@@ -3,9 +3,9 @@
 
 const globals = {
   assets: {
-    highwayDriveWidth: 750,
-    highwayImgWidth: 1400,
-    highwayImgHeight: 1800,
+    highwayDriveWidth: 670,
+    highwayImgWidth: 1280,
+    highwayImgHeight: 1760,
   },
   gameplay: {
     spawnHeight: 240,
@@ -13,7 +13,7 @@ const globals = {
     spawnMargin: 50,
     spawnChance: .5,
     minEnemies: 2,
-    drivingSteps: 6,
+    drivingSteps: 5,
   },
   carDefaults: {
     width: 50,
@@ -24,35 +24,79 @@ const globals = {
 /**
  * @type {HTMLCanvasElement}
  */
-const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
 const player = {
-  x: canvas.width / 2 - globals.carDefaults.width / 2,
+  x: 0,
   y: canvas.height - globals.carDefaults.height * 3,
-  color: 'blue',
-  speed: 5,
   movingLeft: false,
   movingRight: false,
 };
 
+const enemies = [];
+
+let score = 0;
+let gameStarted = false;
+let gameOver = false;
+
 let { highwayImgWidth, highwayDriveWidth } = globals.assets;
+let { spawnHeight, drivingSteps } = globals.gameplay;
+
 let highwayOffset = 0;
 let spawnHeightRemaining = -globals.gameplay.spawnMargin;
 
-let score = 0;
-let gameOver = false;
+let leftBound = 0;
+let rightBound = 0;
 
-let leftBound = (canvas.width - highwayDriveWidth) / 2;
-let rightBound = (canvas.width + highwayDriveWidth) / 2;
+let gamepad;
+
+function initGameplay ()
+{
+  // Use joystick input for horizontal movement.
+  if (gamepad)
+  {
+    // eslint-disable-next-line prefer-destructuring
+    const joystick = gamepad.axes[0];
+    player.x = (canvas.width - globals.carDefaults.width) / 2 + joystick * highwayDriveWidth / 2;
+  }
+  else
+  {
+    player.x = canvas.width / 2 - globals.carDefaults.width / 2;
+  }
+
+  player.movingLeft = false;
+  player.movingRight = false;
+
+  enemies.length = 0;
+
+  score = 0;
+  gameStarted = false;
+  gameOver = false;
+
+  // eslint-disable-next-line prefer-destructuring
+  highwayImgWidth = globals.assets.highwayImgWidth;
+  // eslint-disable-next-line prefer-destructuring
+  highwayDriveWidth = globals.assets.highwayDriveWidth;
+  // eslint-disable-next-line prefer-destructuring
+  spawnHeight = globals.gameplay.spawnHeight;
+  // eslint-disable-next-line prefer-destructuring
+  drivingSteps = globals.gameplay.drivingSteps;
+
+  highwayOffset = 0;
+  spawnHeightRemaining = -globals.gameplay.spawnMargin;
+
+  leftBound = (canvas.width - highwayDriveWidth) / 2;
+  rightBound = (canvas.width + highwayDriveWidth) / 2;
+
+  // eslint-disable-next-line no-use-before-define
+  window.requestAnimationFrame(gameLoop);
+}
 
 const highwayImg = document.getElementById('highway-img');
 const carPlayer = document.getElementById('car-player-img');
 const carEnemy = document.getElementById('car-enemy-img');
 
-const enemies = [];
-
-let gamepad;
 window.addEventListener('gamepadconnected', e =>
 {
   // Use the first connected gamepad.
@@ -86,30 +130,37 @@ document.addEventListener('keyup', e =>
 
 function movePlayer ()
 {
-  if (player.movingLeft)
-  {
-    player.x -= player.speed;
-  }
-  else if (player.movingRight)
-  {
-    player.x += player.speed;
-  }
-
   // Use joystick input for horizontal movement.
   if (gamepad)
   {
+    const oldX = player.x;
+
     // eslint-disable-next-line prefer-destructuring
     const joystick = gamepad.axes[0];
     player.x = (canvas.width - globals.carDefaults.width) / 2 + joystick * highwayDriveWidth / 2;
+
+    gameStarted ||= Math.abs(player.x - oldX) >= 6;
+  }
+
+  // Use keyboard input for horizontal movement.
+  else if (player.movingLeft)
+  {
+    gameStarted = true;
+    player.x -= drivingSteps;
+  }
+  else if (player.movingRight)
+  {
+    gameStarted = true;
+    player.x += drivingSteps;
   }
 }
 
 function moveGameplay ()
 {
-  spawnHeightRemaining -= globals.gameplay.drivingSteps;
+  spawnHeightRemaining -= drivingSteps;
 
   highwayOffset %= globals.assets.highwayImgHeight;
-  highwayOffset += globals.gameplay.drivingSteps * 3;
+  highwayOffset += drivingSteps * 3;
 
   enemies.forEach((enemy, index) =>
   {
@@ -119,8 +170,8 @@ function moveGameplay ()
       enemy.dodged = true;
       score++;
 
-      globals.gameplay.spawnHeight = Math.max(.992 * globals.gameplay.spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
-      globals.gameplay.drivingSteps *= 1.005;
+      spawnHeight = Math.max(.992 * spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
+      drivingSteps *= 1.005;
 
       highwayImgWidth = Math.max(.99 * highwayImgWidth, canvas.width);
       highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
@@ -130,7 +181,7 @@ function moveGameplay ()
     }
 
     // Move the enemy down.
-    enemy.y += globals.gameplay.drivingSteps;
+    enemy.y += drivingSteps;
 
     // Remove the enemy when it goes offscreen.
     if (enemy.y > canvas.height)
@@ -157,34 +208,30 @@ function moveGameplay ()
   });
 }
 
-function checkCollisions ()
-{
-  gameOver =
-    // Game over if the player hits a sidewall.
-    player.x < leftBound - 20 || player.x + globals.carDefaults.width > rightBound + 20
-    // Game over if the player hits an enemy.
-    || enemies.some(enemy =>
-      player.x < enemy.x + globals.carDefaults.width - 5
-      && player.x + globals.carDefaults.width > enemy.x + 5
-      && player.y < enemy.y + globals.carDefaults.height - 2
-      && player.y + globals.carDefaults.height > enemy.y + 2);
-}
+const isGameOver = () =>
+  // Game over if the player hits a sidewall.
+  player.x < leftBound - 20 || player.x + globals.carDefaults.width > rightBound + 20
+  // Game over if the player hits an enemy.
+  || enemies.some(enemy =>
+    player.x < enemy.x + globals.carDefaults.width - 5
+    && player.x + globals.carDefaults.width > enemy.x + 5
+    && player.y < enemy.y + globals.carDefaults.height - 2
+    && player.y + globals.carDefaults.height > enemy.y + 2);
 
 function spawnEnemy ()
 {
   if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
   {
-    spawnHeightRemaining = globals.gameplay.spawnHeight;
+    spawnHeightRemaining = spawnHeight;
 
     if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
     {
       // Speed variation.
-      const speedVariation = globals.gameplay.drivingSteps * 1 / 3 + Math.random() * globals.gameplay.drivingSteps * 1 / 2;
+      const speedVariation = drivingSteps * 1 / 3 + Math.random() * drivingSteps * 1 / 2;
 
       const enemy = {
         x: leftBound + Math.random() * (highwayDriveWidth - globals.carDefaults.width),
-        y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
-        color: 'red',
+        y: -Math.random() * (spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
         speed: speedVariation * (Math.random() < .5 ? 1 : -1),
       };
 
@@ -195,19 +242,16 @@ function spawnEnemy ()
 
 function update ()
 {
-  if (!gameOver)
-  {
-    movePlayer();
-    moveGameplay();
-    checkCollisions();
-    spawnEnemy();
+  movePlayer();
+  moveGameplay();
 
-    console.debug(
-      `drivingSteps: ${globals.gameplay.drivingSteps}\n`
-      + `drivingWidth: ${highwayDriveWidth}\n`
-      + `spawnHeight:  ${globals.gameplay.spawnHeight}`,
-    );
-  }
+  gameOver ||= gameStarted && isGameOver();
+  gameOver || !gameStarted || spawnEnemy();
+
+  // Draw the score.
+  ctx.fillStyle = 'black';
+  ctx.font = 'bold 20px Arial';
+  ctx.fillText(`Score: ${score}`, canvas.width / 2 - 40, 30);
 }
 
 function draw ()
@@ -231,12 +275,14 @@ function draw ()
   // Draw the score.
   ctx.fillStyle = 'black';
   ctx.font = '20px Arial';
-  ctx.fillText(`Score: ${score}`, 10, 30);
+  ctx.fillText(`Score: ${score}`, canvas.width / 2 - 40, 30);
 
   // Draw the game over message.
   if (gameOver)
   {
-    ctx.fillText('Game Over', canvas.width / 2 - 60, canvas.height / 2);
+    ctx.fillStyle = 'darkred';
+    ctx.font = 'bold 30px Arial';
+    ctx.fillText('Game Over', canvas.width / 2 - 80, canvas.height / 2);
   }
 }
 
@@ -249,7 +295,11 @@ function gameLoop ()
   {
     window.requestAnimationFrame(gameLoop);
   }
+  else
+  {
+    setTimeout(initGameplay, 3000);
+  }
 }
 
 // Start the game loop.
-window.requestAnimationFrame(gameLoop);
+initGameplay();
