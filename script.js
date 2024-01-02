@@ -52,6 +52,14 @@ const carEnemy = document.getElementById('car-enemy-img');
 
 const enemies = [];
 
+let gamepad;
+window.addEventListener('gamepadconnected', e =>
+{
+  // Use the first connected gamepad.
+  // eslint-disable-next-line prefer-destructuring
+  gamepad = e.gamepad;
+});
+
 document.addEventListener('keydown', e =>
 {
   if (e.key === 'ArrowLeft')
@@ -85,6 +93,14 @@ function movePlayer ()
   else if (player.movingRight)
   {
     player.x += player.speed;
+  }
+
+  // Use joystick input for horizontal movement.
+  if (gamepad)
+  {
+    // eslint-disable-next-line prefer-destructuring
+    const joystick = gamepad.axes[0];
+    player.x = (canvas.width - globals.carDefaults.width) / 2 + joystick * highwayDriveWidth / 2;
   }
 }
 
