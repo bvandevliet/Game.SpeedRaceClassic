@@ -8,11 +8,11 @@ const globals = {
   },
   gameplay: {
     spawnHeight: 240,
-    spawnEntropy: 70,
+    spawnEntropy: 60,
     spawnMargin: 100,
     spawnChance: .75,
     minEnemies: 2,
-    drivingSteps: 3,
+    drivingSteps: 5,
   },
   carDefaults: {
     width: 50,
@@ -91,7 +91,7 @@ function moveGameplay ()
   spawnHeightRemaining -= globals.gameplay.drivingSteps;
 
   highwayOffset %= globals.assets.highwayImgHeight;
-  highwayOffset += globals.gameplay.drivingSteps * 1.5;
+  highwayOffset += globals.gameplay.drivingSteps * 3;
 
   enemies.forEach((enemy, index) =>
   {
@@ -145,17 +145,14 @@ function spawnEnemy ()
 
     if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
     {
-      // Random initial direction.
-      const speedMultiplier = Math.random() < .5 ? 1 : -1;
-
       // Speed variation.
-      const speedVariation = 2 + Math.random() * (globals.gameplay.drivingSteps * .5 + 2);
+      const speedVariation = globals.gameplay.drivingSteps * 2 / 3 + Math.random() * globals.gameplay.drivingSteps * 2 / 3;
 
       const enemy = {
         x: leftBound + Math.random() * (globals.assets.highwayDriveWidth - globals.carDefaults.width),
         y: -Math.random() * (globals.gameplay.spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
         color: 'red',
-        speed: speedMultiplier * speedVariation,
+        speed: speedVariation * (Math.random() < .5 ? 1 : -1),
       };
 
       enemies.push(enemy);
