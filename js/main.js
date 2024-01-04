@@ -172,10 +172,10 @@ function moveGameplay ()
       enemy.dodged = true;
       score++;
 
-      spawnEntropy = Math.max(.99 * spawnEntropy, globals.gameplay.spawnMinEntropy);
-      drivingSteps *= 1.005;
+      spawnEntropy -= (spawnEntropy - globals.gameplay.spawnMinEntropy) * .02;
+      drivingSteps += globals.gameplay.drivingSteps * .005;
 
-      highwayImgWidth = Math.max(.99 * highwayImgWidth, canvas.width);
+      highwayImgWidth -= (highwayImgWidth - canvas.width) * .03;
       highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
 
       leftBound = (canvas.width - highwayDriveWidth) / 2;
