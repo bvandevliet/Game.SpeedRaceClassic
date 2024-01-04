@@ -3,7 +3,7 @@
 
 const globals = {
   assets: {
-    highwayDriveWidth: 670,
+    highwayDriveWidth: 710,
     highwayImgWidth: 1280,
     highwayImgHeight: 1760,
   },
@@ -130,6 +130,62 @@ document.addEventListener('keyup', e =>
   }
 });
 
+function moveGameplay ()
+{
+  spawnHeightRemaining -= drivingSteps;
+
+  highwayOffset %= globals.assets.highwayImgHeight;
+  highwayOffset += drivingSteps * 3;
+
+  enemies.forEach((enemy, index) =>
+  {
+    // Set score and increase difficulty.
+    if (!enemy.dodged && enemy.y > player.y + globals.carDefaults.height)
+    {
+      enemy.dodged = true;
+      score++;
+
+      spawnEntropy -= (spawnEntropy - globals.gameplay.spawnMinEntropy) * .02;
+      drivingSteps += globals.gameplay.drivingSteps * .005;
+
+      highwayImgWidth -= (highwayImgWidth - canvas.width) * .03;
+      highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
+
+      leftBound = (canvas.width - highwayDriveWidth) / 2;
+      rightBound = (canvas.width + highwayDriveWidth) / 2;
+
+      // Keep the player in bounds.
+      player.x = Math.max(leftBound, Math.min(rightBound - globals.carDefaults.width, player.x));
+    }
+
+    // Move the enemy down.
+    enemy.y += drivingSteps;
+
+    // Remove the enemy when it goes offscreen.
+    if (enemy.y > canvas.height)
+    {
+      enemy.dodged || score++;
+
+      enemies.splice(index, 1);
+
+      return;
+    }
+
+    // Move the enemy sideways.
+    enemy.x += enemy.speed;
+
+    // Reverse direction when hitting the sidewalls.
+    if (enemy.x < leftBound + highwayDriveWidth * .02)
+    {
+      enemy.speed = Math.abs(enemy.speed);
+    }
+    else if (enemy.x + globals.carDefaults.width > rightBound - highwayDriveWidth * .02)
+    {
+      enemy.speed = -Math.abs(enemy.speed);
+    }
+  });
+}
+
 function movePlayer ()
 {
   // Use joystick input for horizontal movement.
@@ -157,62 +213,9 @@ function movePlayer ()
   }
 }
 
-function moveGameplay ()
-{
-  spawnHeightRemaining -= drivingSteps;
-
-  highwayOffset %= globals.assets.highwayImgHeight;
-  highwayOffset += drivingSteps * 3;
-
-  enemies.forEach((enemy, index) =>
-  {
-    // Set score and increase difficulty.
-    if (!enemy.dodged && enemy.y > player.y + globals.carDefaults.height)
-    {
-      enemy.dodged = true;
-      score++;
-
-      spawnEntropy -= (spawnEntropy - globals.gameplay.spawnMinEntropy) * .02;
-      drivingSteps += globals.gameplay.drivingSteps * .005;
-
-      highwayImgWidth -= (highwayImgWidth - canvas.width) * .03;
-      highwayDriveWidth = globals.assets.highwayDriveWidth * highwayImgWidth / globals.assets.highwayImgWidth;
-
-      leftBound = (canvas.width - highwayDriveWidth) / 2;
-      rightBound = (canvas.width + highwayDriveWidth) / 2;
-    }
-
-    // Move the enemy down.
-    enemy.y += drivingSteps;
-
-    // Remove the enemy when it goes offscreen.
-    if (enemy.y > canvas.height)
-    {
-      enemy.dodged || score++;
-
-      enemies.splice(index, 1);
-
-      return;
-    }
-
-    // Move the enemy sideways.
-    enemy.x += enemy.speed;
-
-    // Reverse direction when hitting the sidewalls.
-    if (enemy.x < leftBound)
-    {
-      enemy.speed = Math.abs(enemy.speed);
-    }
-    else if (enemy.x + globals.carDefaults.width > rightBound)
-    {
-      enemy.speed = -Math.abs(enemy.speed);
-    }
-  });
-}
-
 const isGameOver = () =>
   // Game over if the player hits a sidewall.
-  player.x < leftBound - 20 || player.x + globals.carDefaults.width > rightBound + 20
+  player.x < leftBound || player.x + globals.carDefaults.width > rightBound
   // Game over if the player hits an enemy.
   || enemies.some(enemy =>
     player.x < enemy.x + globals.carDefaults.width - 5
@@ -247,8 +250,8 @@ function spawnEnemy ()
 
 function update ()
 {
-  movePlayer();
   moveGameplay();
+  movePlayer();
 
   gameOver ||= gameStarted && isGameOver();
   gameOver || !gameStarted || spawnEnemy();
