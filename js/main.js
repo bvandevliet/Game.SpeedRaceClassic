@@ -8,8 +8,8 @@ const globals = {
     highwayImgHeight: 1760,
   },
   gameplay: {
-    spawnHeight: 220,
-    spawnEntropy: 100,
+    spawnMaxEntropy: 140,
+    spawnMinEntropy: 100,
     spawnMargin: 40,
     spawnChance: .67,
     minEnemies: 2,
@@ -41,10 +41,12 @@ let gameStarted = false;
 let gameOver = false;
 
 let { highwayImgWidth, highwayDriveWidth } = globals.assets;
-let { spawnHeight, drivingSteps } = globals.gameplay;
+let { drivingSteps } = globals.gameplay;
 
 let highwayOffset = 0;
-let spawnHeightRemaining = -globals.gameplay.spawnMargin;
+
+let spawnEntropy = 0;
+let spawnHeightRemaining = 0;
 
 let leftBound = 0;
 let rightBound = 0;
@@ -79,11 +81,11 @@ function initGameplay ()
   // eslint-disable-next-line prefer-destructuring
   highwayDriveWidth = globals.assets.highwayDriveWidth;
   // eslint-disable-next-line prefer-destructuring
-  spawnHeight = globals.gameplay.spawnHeight;
-  // eslint-disable-next-line prefer-destructuring
   drivingSteps = globals.gameplay.drivingSteps;
 
   highwayOffset = 0;
+
+  spawnEntropy = globals.gameplay.spawnMaxEntropy;
   spawnHeightRemaining = -globals.gameplay.spawnMargin;
 
   leftBound = (canvas.width - highwayDriveWidth) / 2;
@@ -170,7 +172,7 @@ function moveGameplay ()
       enemy.dodged = true;
       score++;
 
-      spawnHeight = Math.max(.992 * spawnHeight, globals.carDefaults.height + globals.gameplay.spawnEntropy);
+      spawnEntropy = Math.max(.99 * spawnEntropy, globals.gameplay.spawnMinEntropy);
       drivingSteps *= 1.005;
 
       highwayImgWidth = Math.max(.99 * highwayImgWidth, canvas.width);
@@ -222,16 +224,19 @@ function spawnEnemy ()
 {
   if (spawnHeightRemaining <= -globals.gameplay.spawnMargin)
   {
-    spawnHeightRemaining = spawnHeight;
+    spawnHeightRemaining = globals.carDefaults.height;
 
     if (enemies.length <= globals.gameplay.minEnemies || Math.random() <= globals.gameplay.spawnChance)
     {
+      // Equals the possible spawn area (see enemy.y)
+      spawnHeightRemaining = globals.carDefaults.height + spawnEntropy;
+
       // Speed variation.
       const speedVariation = drivingSteps * 1 / 3 + Math.random() * drivingSteps * 1 / 2;
 
       const enemy = {
         x: leftBound + Math.random() * (highwayDriveWidth - globals.carDefaults.width),
-        y: -Math.random() * (spawnHeight - globals.carDefaults.height) - globals.carDefaults.height,
+        y: -(globals.carDefaults.height + spawnEntropy * Math.random()),
         speed: speedVariation * (Math.random() < .5 ? 1 : -1),
       };
 
